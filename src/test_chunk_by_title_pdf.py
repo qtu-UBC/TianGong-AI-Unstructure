@@ -11,6 +11,34 @@ import pandas as pd
 import re
 from typing import List
 
+"""
+Define helper functions
+"""
+# function to check if a string contains HTML tags
+def contains_html(text) -> bool:
+    # Regular expression pattern to detect typical HTML tags
+    html_pattern = re.compile('<.*?>')
+    return bool(html_pattern.search(text))
+
+# function to convert a table from html format to dataframe
+def html_to_table(html_string: str) -> pd.DataFrame:
+    """
+    Converts an HTML string with table data to a pandas DataFrame.
+
+    :param html_string: String containing HTML data.
+    :return: A pandas DataFrame
+    """
+    try:
+        # Parse HTML string and convert tables to DataFrames
+        table = pd.read_html(html_string)[0] # pd.read_html reads HTML tables into a list of DataFrame objects. 
+                                            # But in this case, we will only have one table per html_string
+
+        return table
+    except ValueError as e:
+        # Return an empty list if no tables are found or if an error occurs
+        print(f"No tables found or error in parsing: {e}")
+        return []
+
 
 pdf_name = "table example for unstructured.pdf"
 
@@ -86,44 +114,18 @@ for text in text_list:
 df = pd.DataFrame(result_list)
 # print(df)
 
-# Function to check if a string contains HTML tags
-def contains_html(text):
-    # Regular expression pattern to detect typical HTML tags
-    html_pattern = re.compile('<.*?>')
-    return bool(html_pattern.search(text))
-
-# Apply the function to each row in the 'body' column and add a new column 'contains_html'
+# identify the cells with html tags (i.e., extracted tables)
+# apply the function to each row in the 'body' column and add a new column 'contains_html'
 df['contains_html'] = df['body'].apply(lambda x: contains_html(str(x)))
 
 # Display the modified DataFrame
-# print(df.head())
+print(df)
 
 # reformat the tables (from html to dataframe)
 df_table_only = df[df['contains_html']==True] 
+table_dfs = df_table_only['body'].apply(html_to_table)
 
-def html_to_table(html_string: str) -> List[pd.DataFrame]:
-    """
-    Converts an HTML string with table data to a list of pandas DataFrames.
-
-    :param html_string: String containing HTML data.
-    :return: A list of pandas DataFrames, each representing a table in the HTML string.
-    """
-    try:
-        # Parse HTML string and convert tables to DataFrames
-        tables = pd.read_html(html_string)
-
-        return tables
-    except ValueError as e:
-        # Return an empty list if no tables are found or if an error occurs
-        print(f"No tables found or error in parsing: {e}")
-        return []
-
-tables = html_to_table(df_table_only.loc[0,'body'])
-
-# Display each table
-for table in tables:
-    print(table)
-
-# Export the DataFrame to a CSV file
-# df.to_csv("output.csv", index=False)  # index=False to not write row names
-# df_table_only.to_csv("output_table_only.csv", index=False)
+# Export the tables into an xlsx file
+with pd.ExcelWriter('output_tables.xlsx') as writer:
+    for i,table_df in enumerate(table_dfs):
+        table_df.to_excel(writer, sheet_name=f"extracted_tab_{i}", index=False)
