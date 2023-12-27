@@ -116,7 +116,7 @@ df = pd.DataFrame(result_list)
 
 # identify the cells with html tags (i.e., extracted tables)
 # apply the function to each row in the 'body' column and add a new column 'contains_html'
-df['contains_html'] = df['body'].apply(lambda x: contains_html(str(x)))
+df['contains_html'] = df['body'].apply(contains_html)
 
 # Display the modified DataFrame
 print(df)
