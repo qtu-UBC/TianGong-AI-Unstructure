@@ -75,6 +75,7 @@ for element in filtered_elements:
         width = abs(point2[0] - point1[0])
         height = abs(point2[1] - point1[1])
         if width >= min_image_width and height >= min_image_height:
+            # generate text from the image
             element.text = vision_completion(element.metadata.image_path)
 
 chunks = chunk_by_title(
